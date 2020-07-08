@@ -19,10 +19,6 @@ from nltk.tokenize import TweetTokenizer
 from nltk.corpus import wordnet
 import math
 
-consumer_key = "KPfSrnBF4RoBKYJtyrzIRIF6L"
-consumer_secret_key = "IhvhSzA3V2Owh9QhZseNe0si7gbJlL4VtJq6DjwjnbVHHR0e9c"
-access_tokken = "1271790548467228681-lMlGGWFRVs76hutMWjFErFto11Qym4"
-access_tokken_secret = "0eZ2HKjAaLGVEjJSbW56E7ap4kCDRvg3bEX3CTWCi71yy"
 
 #pass twitter credentials to tweepy
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret_key)
