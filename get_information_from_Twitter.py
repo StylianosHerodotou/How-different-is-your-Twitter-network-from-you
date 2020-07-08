@@ -347,14 +347,14 @@ def process_these_tweets(tweets, column_keys) -> list:
 
     return tweets_data
 
-def find_and_add_all_tweets_of_users(all_users,unprocessed,processed):
+def find_and_add_all_tweets_of_users(all_users,unprocessed,processed,final_sample_collection):
     for user in all_users:
         if("tweets_collected" in user.keys() and user["tweets_collected"]==True):
             continue
         else:
             find_and_add_all_tweets_of_user(user["_id"],unprocessed,processed)
             try:
-                collection.update_one({"_id":user['_id']},{"$set" : {"tweets_collected":True}})
+                final_sample_collection.update_one({"_id":user['_id']},{"$set" : {"tweets_collected":True}})
             except:
                 print("unable na vali to pedio tweets_collected sto xristi ",user["screen_name"])
                 continue
@@ -369,7 +369,7 @@ def main():
     everything = list(everything)
     unprocessed = db["unprocessed_tweets"]
     processed = db["processed_tweets"]
-    find_and_add_all_tweets_of_users(everything, unprocessed, processed)
+    find_and_add_all_tweets_of_users(everything, unprocessed, processed,collection)
 
 
 # Using the special variable
