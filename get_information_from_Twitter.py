@@ -509,8 +509,12 @@ def clean_tweet(dirty: str) -> str:
 # http://10.16.3.58:6670/?token=acf3308900a42c8fcd381091a486ff52ac7bc7539f3e2bdf
 
 
-def find_and_add_tweets_of_users(sample_of_friends,unprocessed_tweets_of_friends_collection,processed_tweets_of_friends_collection,
-                                     keep_track_of_tweets_collection,max_tweets_per_user,code_for_api):
+def find_and_add_tweets_of_users(sample_of_friends,max_tweets_per_user,code_for_api):
+    client = MongoClient('localhost', 27017)
+    db = client["testDB"]
+    processed_tweets_of_friends_collection = db["processed_tweets_friends_and_followers"]
+    unprocessed_tweets_of_friends_collection = db["unprocessed_tweets_friends_and_followers"]
+    keep_track_of_tweets_collection = db["keep_track_of_tweets"]
     api=None
     if(code_for_api==1):
         auth = tweepy.OAuthHandler(consumer_key1, consumer_secret_key1)
@@ -576,7 +580,7 @@ def find_and_add_tweets_of_user(user_id: int, unprocessed, processed, keep_track
         print("i was unable to save evrything to the database")
 
     # keep grabbing tweets until there are no tweets left to grab
-    while ((len(new_tweets) > 0) and all_tweet_count < max_tweets_per_user) > 0:
+    while ((len(new_tweets) > 0) and all_tweet_count < max_tweets_per_user) :
         print(f"getting tweets before {oldest}")
         # all subsiquent requests use the max_id param to prevent duplicates
         try:
@@ -624,8 +628,17 @@ def find_and_add_tweets_of_user(user_id: int, unprocessed, processed, keep_track
 
 
 
-def find_and_add_friends_of_user(entrepreneur_id, sample_of_friends, friend_collection,
-                          relationship_collection, code_for_friendship,code_for_api):
+def find_and_add_friends_of_user(entrepreneur_id, sample_of_friends,
+                                 code_for_friendship,code_for_api):
+    client = MongoClient('localhost', 27017)
+    db = client["testDB"]
+    relationship_collection=db["relationships"]
+    friend_collection=None
+    if(code_for_friendship==1):
+        friend_collection=db["w_followers"]
+    else:
+        friend_collection = db["w_followings"]
+
     api=None
     if(code_for_api==1):
         auth = tweepy.OAuthHandler(consumer_key1, consumer_secret_key1)
@@ -693,9 +706,7 @@ def find_and_add_friend_of_user(friends_id, entrepreneur_id, friend_collection,
 
 
 
-def create_entrepreneurs_processes(entrepreneurs,followers_collection,following_collection,relationship_collection,
-             unprocessed_tweets_of_friends_collection,processed_tweets_of_friends_collection,
-             keep_track_of_tweets_collection,max_tweets_per_user,
+def create_entrepreneurs_processes(entrepreneurs,max_tweets_per_user,
              max_friends_per_user,starting_index, finishing_index):
 
 
@@ -706,9 +717,7 @@ def create_entrepreneurs_processes(entrepreneurs,followers_collection,following_
 
         random_sample_followers=generate_random_sample(entrepreneur["followers_ids"],0,len(entrepreneur["followers_ids"]),max_friends_per_user)
         random_sample_following = generate_random_sample(entrepreneur["following_ids"], 0, len(entrepreneur["following_ids"]),max_friends_per_user)
-        arguments=(entrepreneur,random_sample_followers,random_sample_following,followers_collection,following_collection,relationship_collection,
-             unprocessed_tweets_of_friends_collection,processed_tweets_of_friends_collection,
-             keep_track_of_tweets_collection,max_tweets_per_user)
+        arguments=(entrepreneur,random_sample_followers,random_sample_following,max_tweets_per_user)
         pool.apply_async(create_entrepreneur_process, args=arguments)
         index=index+1
 
@@ -717,9 +726,8 @@ def create_entrepreneurs_processes(entrepreneurs,followers_collection,following_
 
 
 
-def create_entrepreneur_process(entrepreneur,random_sample_followers,random_sample_following,followers_collection,following_collection,relationship_collection,
-             unprocessed_tweets_of_friends_collection,processed_tweets_of_friends_collection,
-             keep_track_of_tweets_collection,max_tweets_per_user):
+def create_entrepreneur_process(entrepreneur,random_sample_followers,
+                                random_sample_following,max_tweets_per_user):
     # code=1->followers
     code_for_followers = 1
     # code=2->Followings
@@ -730,13 +738,11 @@ def create_entrepreneur_process(entrepreneur,random_sample_followers,random_samp
     code_for_api_2=2
 
 
-    args1 = (random_sample_followers, unprocessed_tweets_of_friends_collection, processed_tweets_of_friends_collection,
-             keep_track_of_tweets_collection, max_tweets_per_user, code_for_api_1)
-    args2 = (entrepreneur["_id"], random_sample_followers, followers_collection, relationship_collection, code_for_followers,
+    args1 = (random_sample_followers, max_tweets_per_user, code_for_api_1)
+    args2 = (entrepreneur["_id"], random_sample_followers, code_for_followers,
     code_for_api_1)
-    args3 = (random_sample_following, unprocessed_tweets_of_friends_collection, processed_tweets_of_friends_collection,
-             keep_track_of_tweets_collection, max_tweets_per_user, code_for_api_2)
-    args4 = (entrepreneur["_id"], random_sample_following, following_collection, relationship_collection, code_for_followings,
+    args3 = (random_sample_following, max_tweets_per_user, code_for_api_2)
+    args4 = (entrepreneur["_id"], random_sample_following, code_for_followings,
     code_for_api_2)
 
     pool = multiprocessing.Pool()  # use all available cores, otherwise specify the number you want as an argument
@@ -751,24 +757,16 @@ def create_entrepreneur_process(entrepreneur,random_sample_followers,random_samp
 def main():
     client = MongoClient('localhost', 27017)
     db = client["testDB"]
-    followers_collection=db["Followers"]
-    following_collection=db["Following"]
-    relationship_collection=db["relationships"]
-    processed_tweets_of_friends_collection = db["processed_tweets_friends_and_followers"]
-    unprocessed_tweets_of_friends_collection = db["unprocessed_tweets_friends_and_followers"]
     final_sample_collection = db["final_sample"]
-    keep_track_of_tweets_collection = db["keep_track_of_tweets"]
-
     entrepreneurs = get_everything_to_a_list(final_sample_collection, True)
     starting_index=0
     finishing_index=len(entrepreneurs)
     max_tweets_per_user = 600
     max_friends_per_user = 150
 
-    create_entrepreneurs_processes(entrepreneurs, followers_collection, following_collection, relationship_collection,
-                                   unprocessed_tweets_of_friends_collection, processed_tweets_of_friends_collection,
-                                   keep_track_of_tweets_collection, max_tweets_per_user,
-                                   max_friends_per_user, starting_index, finishing_index)
+    print(len(entrepreneurs))
+    # create_entrepreneurs_processes(entrepreneurs, max_tweets_per_user,
+    #                                max_friends_per_user, starting_index, finishing_index)
 
     #turn_screen_name_to_lowercase(collection)
 if __name__ == "__main__":
