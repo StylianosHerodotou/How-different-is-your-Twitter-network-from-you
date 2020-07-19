@@ -677,22 +677,35 @@ def find_and_add_friend_of_user(friends_id, entrepreneur_id, friend_collection,
     else:
         print("this user is already in the database ", friends_id)
     # ite iparxi idi ite oxi dimiourgo ti sxesi me afto ton entrepreneur
+    temp=None
     if (code == 1):
         relationship = {
             "_id": {
                 "is_followed": entrepreneur_id,
-                "is_followed_by": friend["_id"]
+                "is_followed_by": friends_id
             }
         }
+        temp=relationship_collection.find_one({
+            "_id": {
+                "is_followed": entrepreneur_id,
+                "is_followed_by": friends_id
+            }
+        }  )
     else:
         relationship = {
             "_id": {
-                "is_followed": friend["_id"],
+                "is_followed": friends_id,
                 "is_followed_by": entrepreneur_id
             }
         }
+        temp=relationship_collection.find_one({
+            "_id": {
+                "is_followed": friends_id,
+                "is_followed_by": entrepreneur_id
+            }
+        }  )
     # elenxo ean iparxi idi i sxesi
-    if (relationship_collection.find_one({relationship}) != None):
+    if (temp != None):
         print("relationship already exists")
     else:
         try:
