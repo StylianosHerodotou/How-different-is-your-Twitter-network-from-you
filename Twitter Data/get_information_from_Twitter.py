@@ -506,7 +506,6 @@ def clean_tweet(dirty: str) -> str:
     return ' '.join(clean)
 
 
-# http://10.16.3.58:6670/?token=acf3308900a42c8fcd381091a486ff52ac7bc7539f3e2bdf
 
 
 def find_and_add_tweets_of_users(sample_of_friends,max_tweets_per_user,code_for_api):
